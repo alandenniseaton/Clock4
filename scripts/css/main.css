@@ -1,0 +1,49 @@
+/* 
+    Document   : main.css
+    Created on : 29/10/2012, 4:59:16 AM
+	Modified on: 06/06/2017
+    Author     : Alan Dennis Eaton <alan.dennis.eaton@gmail.com>
+*/
+
+
+html, body {
+	background-color: black;
+	width: 100%;
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	overflow:hidden;
+}
+
+
+.clockDay{
+	position: fixed;
+	top: 0;
+	width: 100%;
+/*	font-family:monospace;*/
+	font-family: initial;
+    font-weight: bold;
+	text-align: center;
+	color: white;
+}
+
+.clockTime{
+/*	font-family:monospace;*/
+	font-family: initial;
+    font-weight: bold;
+	text-align: center;
+	color: white;
+}
+
+.clockDate{
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+/*	font-family:monospace;*/
+	font-family: initial;
+    font-weight: bold;
+	text-align: center;
+	color: white;
+}
