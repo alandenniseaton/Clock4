@@ -9,7 +9,7 @@
 //============================================================
 //	Timer :: Module
 //
-//	minimum 1 second resolution
+//	minimum 1/100 second resolution
 //
 //============================================================
 
@@ -35,77 +35,111 @@ var clearTimeout = global.clearTimeout;
 //------------------------------------------------------------
 //	Timer :: Class
 
+function tick(timer, delta) {
+	timer.timeoutId = setTimeout (
+		function() {
+			timer.waiting = false;
+			triggerAction(timer);
+		},
+		delta
+	);
+
+	timer.waiting = true;
+}
+
+function startTicking(timer) {
+	var now      = Date.now();
+	var from     = timer.from;
+	var period   = timer.period;
+	var nextTick = Math.floor((now-from)/period) + 1;
+
+	if (nextTick < 0) {
+		// now < from
+		// wait until from
+		nextTick = 0;
+	}
+
+	timer.nextTick = nextTick;
+	
+	tick(timer, from + nextTick*period - now);
+
+	timer.started = true;
+}
+
+function resumeTicking(timer) {
+	var now      = Date.now();
+	var from     = timer.from;
+	var period   = timer.period;
+	var nextTick = Math.floor((now-from)/period) + 1;
+
+	if (nextTick <= timer.lastTick) {
+		// might happen!
+		// depends on the accuracy of browser timeouts
+		// and whether modified by code
+		nextTick = timer.lastTick + 1;
+	}
+
+	timer.nextTick = nextTick;
+	
+	tick(timer, from + nextTick*period - now);
+}
+
+function stopTicking(timer) {
+	if (timer.waiting) {
+		clearTimeout(timer.timeoutId);
+		timer.timeoutId = null;
+
+		timer.waiting = false;
+	}
+}
+
+function triggerAction(timer) {
+	timer.currentTick = timer.nextTick;
+	timer.nextTick = null;
+	
+	timer.action.call(timer.context, timer);
+
+	timer.lastTick = timer.currentTick;
+	timer.currentTick = null;
+
+	if (timer.repeats) {
+		if (timer.active) { resumeTicking(timer); }
+	}
+	else {
+		timer.active = false;
+	}
+}
+
+
 class Timer {
-	constructor(action, period, context) {	
+	constructor(action, context) {	
+		this.initialise();
+
 		this.action  = ifFunction(action, nothing);
 		this.context = ifObject(context, {});
-		
-		this.setPeriod(period);
-
-		this.setFrom();
-		
-		// the last activation
-		this.last = {
-			index: -1
-		};
-		
-		this.repeating = false;
-		this.stopped = true;
 	}
 
-	static restart(timer) {
-		var now    = Date.now();
-		var from   = timer.from;
-		var period = timer.period;
-		var index;
-		var time;
-		
-		index = Math.floor((now-from)/period) + 1;
-		
-		if (index <= timer.last.index) {
-			// might happen!
-			// depends on the accuracy of browser timeouts
-			// and whether modified by code
-			// and whether this is the initial reset.
-			index = timer.last.index + 1;
-		}
-		
-		time = from + index*period;
+	initialise(period) {
+		this.repeats = false;
+		this.active = false;
 
-		timer.next = {
-			index: index,
-			time: time
-		};
+		this.lastTick = null;
+		this.currentTick = null;
+		this.nextTick = null;
+
+		this.started = false;
+		this.waiting = false;
 		
-		timer.timeoutId = setTimeout (
-			function() { Timer.step(timer); },
-			time - now
-		);
-		timer.stopped = false;
-	}
-	
-	static step(timer) {
-		timer.index = timer.next.index;
-		timer.current = timer.next;
-		delete timer.next;
-		
-		timer.action.call(timer.context, timer);
-		
-		timer.last = timer.current;
-		delete timer.current;
-		
-		if (timer.repeating) {
-			if (!timer.stopped) { Timer.restart(timer); }
-		} else {
-			timer.stopped = true;
-		}
+		this.from = 0;
+		this.period = Timer.MINUTE;
 	}
 
-	
 	setFrom(from) {
-		var d = new Date(from).getTime();
+		if (!this.started) {
+			let d = new Date(from).getTime();
 		
-		this.from = (d || d === 0)? d: Date.now();
+			this.from = (d || d === 0)? d: Date.now();
+		}
 		
 		return this;
 	}
@@ -115,9 +149,10 @@ class Timer {
 	}
 	
 	setPeriod(period) {
-		// minimum 1 second period
-		this.period = Math.max(ifNumber(period, 0), 1000);
-		
+		if (!this.started) {
+			this.period = Math.max(ifNumber(period, 0), Timer.RESOLUTION);
+		}
+
 		return this;
 	}
 	
@@ -125,48 +160,69 @@ class Timer {
 		return this.period;
 	}
 	
-	start(from) {
-		if (this.stopped) {
-			// make sure this.from is set
-			this.setFrom(ifDefined(from, this.from));
-			
-			Timer.restart(this);
+	start() {
+		if (!this.started) {
+			startTicking(this);
+
+			this.active = true;
 		}
 		
 		return this;
 	}
 	
+	pause() {
+		if (this.started) {
+			if (this.active) {
+				stopTicking(this);
+				this.active = false;
+			}
+		}
+
+		return this;
+	}
+	
+	resume() {
+		if (this.started) {
+			if (!this.active) {
+				resumeTicking(this);
+				this.active = true;
+			}
+		}
+
+		return this;
+	}
+
 	stop() {
-		if (!this.stopped) {
-			clearTimeout(this.timeoutId);
-			delete this.timeoutId;
-			delete this.next;
-			this.stopped = true;
+		if (this.started) {
+			this.pause();
+			this.initialise();
 		}
-		
+
 		return this;
 	}
-	
-	repeat(repeating) {
-		this.repeating = (arguments.length === 0) || !!repeating;
+
+	repeat() {
+		if (!this.started) {
+			this.repeats = true;
+		}
 		
 		return this;
 	}
 	
 	isRepeating() {
-		return this.repeating;
+		return this.repeats;
 	}
 	
 	getContext() {
 		return this.context;
 	}
 	
-	getIndex() {
-		return this.index || 0;
+	getCurrentTick() {
+		return this.currentTick || this.lastTick || 0;
 	}
 	
-	getTime() {
-		return this.getFrom() + this.getIndex()*this.getPeriod();
+	getCurrentTime() {
+		return this.getFrom() + this.getCurrentTick()*this.getPeriod();
 	}
 	
 	getDate() {
@@ -177,12 +233,19 @@ class Timer {
 
 
 //------------------------------------------------------------
-Timer.SECOND = 1000; // *Timer.MILLISECOND
-Timer.MINUTE = 60*Timer.SECOND;
-Timer.HOUR   = 60*Timer.MINUTE;
-Timer.DAY    = 24*Timer.HOUR;
-Timer.WEEK   = 7*Timer.DAY;
-Timer.YEAR   = 365*Timer.DAY;
+Timer.SECOND   = 1000; // *Timer.MILLISECOND
+Timer.MINUTE   = 60*Timer.SECOND;
+Timer.HOUR     = 60*Timer.MINUTE;
+Timer.DAY      = 24*Timer.HOUR;
+Timer.WEEK     = 7*Timer.DAY;
+Timer.MONTH28  = 28*Timer.DAY;
+Timer.MONTH29  = 29*Timer.DAY;
+Timer.MONTH30  = 30*Timer.DAY;
+Timer.MONTH31  = 31*Timer.DAY;
+Timer.YEAR     = 365*Timer.DAY;
+Timer.LEAPYEAR = Timer.YEAR + Timer.DAY;
+
+Timer.RESOLUTION = Timer.SECOND/100;
 
 
 //------------------------------------------------------------

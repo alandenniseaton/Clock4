@@ -143,7 +143,7 @@ page.main = function(){
 	//---------------------------------------------------------
 	window.addEventListener('click', toggleFullscreen);
 	
-	page.timer = new Timer(tick, Timer.SECOND).repeat().start(0);
+	page.timer = new Timer(tick).setPeriod(Timer.SECOND).repeat().start();
 };
 
 
