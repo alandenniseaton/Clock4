@@ -3,6 +3,7 @@
     Created on : 29/10/2012, 4:59:16 AM
 	Modified on: 24/11/2014, 
 	Modified on: 06/06/2017 (major changes)
+	Modified on: 19/10/2017 (register service worker)
     Author     : Alan Dennis Eaton <alan.dennis.eaton@gmail.com>
 */
 
@@ -10,6 +11,18 @@
 
 //-----------------------------------------------------------------
 page.main = function(){
+
+	//---------------------------------------------------------
+	if ('serviceWorker' in navigator) {
+		console.log('Registering service worker');
+		
+		navigator.serviceWorker.register('service-worker.js')
+		.then(reg => {
+			console.log('Registration succeeded. Scope is: ' + reg.scope);
+		}).catch(error => {
+			console.log('Registration failed: ' + error);
+		});
+	}
 
 	//---------------------------------------------------------
 	var global = util.global;

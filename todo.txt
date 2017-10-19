@@ -1,4 +1,0 @@
-2017-10-01
-    cache the application framework
-    ? will this mean that a network connection is not needed
-    
