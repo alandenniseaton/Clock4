@@ -27,7 +27,7 @@ body {
 	font-family: initial;
     font-weight: bold;
 	text-align: center;
-	color: white;
+/*	color: white;*/
 }
 
 .clockTime{
@@ -35,7 +35,7 @@ body {
 	font-family: initial;
     font-weight: bold;
 	text-align: center;
-	color: white;
+/*	color: white;*/
 }
 
 .clockDate{
@@ -46,5 +46,5 @@ body {
 	font-family: initial;
     font-weight: bold;
 	text-align: center;
-	color: white;
+/*	color: white;*/
 }
