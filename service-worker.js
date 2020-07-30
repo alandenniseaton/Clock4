@@ -32,15 +32,11 @@ var TOCACHE = [
 
 //-----------------------------------------------------------------
 self.addEventListener('install', function(event) {
-    console.log('The service worker is being installed');
-
     event.waitUntil(onInstall());
 });
 
 
 self.addEventListener('activate', function(event) {
-    console.log('The Service worker is activating');
-
     event.waitUntil(onActivate());
 });
 
@@ -55,6 +51,8 @@ self.addEventListener('fetch', function(event) {
 
 //-----------------------------------------------------------------
 function onInstall() {    
+    console.log('The service worker is being installed');
+
     return caches.open(CACHE).then(function (cache) {
         return cache.addAll(TOCACHE);
       });
@@ -62,6 +60,8 @@ function onInstall() {
 
 
 async function onActivate() {
+    console.log('The Service worker is activating');
+
     let keyList = await caches.keys();
     let deletes = [];
     
