@@ -1,14 +1,15 @@
 /* 
     Document   : service-worker.js
     Created on : 19/10/2017, 18:24
+    Updated on : 31/07/2020, 08:59
     Author     : Alan Dennis Eaton <alan.dennis.eaton@gmail.com>
 */
 
 'use strict';
 
 //-----------------------------------------------------------------
-var APP = 'Clock4-static';
-var VERSION = '2017.10.19(1)';
+var APP = 'Clock4';
+var VERSION = '2020.07.31';
 
 var CACHE = APP + '-V' + VERSION;
 
